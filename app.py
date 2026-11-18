@@ -1,33 +1,47 @@
 import streamlit as st
 from gtts import gTTS
 import io
+import requests
 
 st.set_page_config(page_title="MUSA AI", layout="centered")
 st.title("MUSA AI")
-st.write("I am MUSA AI. Talk to me.")
+st.write("I am MUSA AI. Ask me anything.")
 
 if "chat" not in st.session_state:
     st.session_state.chat = []
 
-def musa_brain(q):
-    q = q.lower()
-    if "who are you" in q:
+def get_smart_answer(q):
+    # 1. ONLY say "created by Musa" when asked about creator
+    low = q.lower()
+    if "who are you" in low or "who is musa ai" in low:
         return "I am MUSA AI. I am created by Musa."
-    if "creator" in q or "created you" in q or "made you" in q or "who made" in q:
+    if "who created" in low or "who made you" in low or "creator" in low:
         return "I am created by Musa."
-    if "who am i" in q or "my name" in q:
+    if "who am i" in low or "my name" in low:
         return "You are Musa."
-    if "youtube" in q:
+    if "what can you do" in low or "what you can do" in low or "abilities" in low:
+        return "I can do a lot, Musa! I can answer questions, open YouTube, open WhatsApp, play songs, tell you about the world, and speak to you. Try asking me 'What is AI?' or 'Tell me about South Africa'."
+    if "youtube" in low:
         return "OPEN_YOUTUBE"
-    if "whatsapp" in q:
+    if "whatsapp" in low:
         return "OPEN_WHATSAPP"
-    if "play song" in q or "play music" in q or "song" in q:
+    if "play song" in low or "play music" in low:
         return "PLAY_SONG"
-    if "hello" in q or "hi" in q or "sawubona" in q:
-        return "Hello Musa! Say 'open YouTube' or 'play song' and I will do it."
-    if "how are you" in q:
-        return "I am great because I am with you, Musa."
-    return "I am MUSA AI. I am created by Musa."
+    if "hello" in low or "hi" in low or "sawubona" in low:
+        return "Hello Musa! What do you want to know today?"
+    if "how are you" in low:
+        return "I am doing great, Musa! Ready to help you. What do you want to learn?"
+    if "happening" in low or "news" in low or "usa" in low:
+        return "In the USA right now, there is a lot happening with technology, sports, and politics. For the very latest news, I recommend checking YouTube News or Google News, because my live news is still learning. Do you want me to open YouTube News for you?"
+    # 2. For EVERYTHING ELSE - try to answer from Wikipedia - real knowledge
+    try:
+        search = requests.get(f"https://en.wikipedia.org/api/rest_v1/page/summary/{q}", timeout=5).json()
+        if "extract" in search and search["extract"]:
+            return search["extract"][:600]
+    except:
+        pass
+    # 3. If Wikipedia fails, give a real answer, NOT the same line
+    return f"Good question, Musa! You asked about '{q}'. Here is what I think: This is an interesting topic. I am still learning to be 1 step ahead, but I can help you explore it. Try asking me in a different way, like 'What is {q}?' or 'Tell me about {q}'."
 
 def speak(text):
     try:
@@ -63,7 +77,7 @@ for m in st.session_state.chat:
 q = st.text_input("Ask MUSA AI anything...")
 if st.button("Ask MUSA AI"):
     if q:
-        ans = musa_brain(q)
+        ans = get_smart_answer(q)
         if ans == "OPEN_YOUTUBE":
             ans = "Opening YouTube for you, Musa!"
             st.link_button("Click to Open YouTube", "https://www.youtube.com")
